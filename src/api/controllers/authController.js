@@ -10,8 +10,7 @@ const jwt =require ('jsonwebtoken');
 exports.register = async (req, res) => {
     try {
       const { Role: role, Password: Password, ...restBody } = req.body;
-  
-      // Find role by name
+  // Find role by name
       const roleId = await Role.findOne({ Role: role });
       if (!roleId) {
         return res.status(constants.status_code.header.ok).send({
