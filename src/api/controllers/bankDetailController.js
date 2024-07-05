@@ -8,12 +8,12 @@ exports.addBankDetail = async (req, res) => {
     const existingBank = await BankDetail.findOne({ AccNumber });
     if (existingBank) {
       return res
-        .status(constants.status_code.header.conflict) // 409 Conflict
+        .status(constants.status_code.header.server_error)
         .send({ message: 'AccNumber must be unique', success: false });
     }
     req.body.CreatedBy = req.user._id;
     req.body.UpdatedBy = req.user._id;
-    const bank = await BankDetail.findOne({AccNumber});
+    const bank = await BankDetail.create(req.body);;
 
     return res
       .status(constants.status_code.header.ok)

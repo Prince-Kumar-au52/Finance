@@ -8,7 +8,7 @@ exports.addUPIDetail = async (req, res) => {
     const existingBank = await UPIDetail.findOne({ UpiId });
     if (existingBank) {
       return res
-        .status(constants.status_code.header.conflict) 
+      .status(constants.status_code.header.server_error)
         .send({ message: 'UPI ID must be unique', success: false });
     }
     req.body.CreatedBy = req.user._id;
