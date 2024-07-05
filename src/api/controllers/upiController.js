@@ -3,6 +3,14 @@ const UPIDetail = require("../../models/upiId");
 
 exports.addUPIDetail = async (req, res) => {
   try {
+    const { UpiId } = req.body;
+
+    const existingBank = await UPIDetail.findOne({ UpiId });
+    if (existingBank) {
+      return res
+        .status(constants.status_code.header.conflict) 
+        .send({ message: 'UPI ID must be unique', success: false });
+    }
     req.body.CreatedBy = req.user._id;
     req.body.UpdatedBy = req.user._id;
     const upi = await UPIDetail.create(req.body);

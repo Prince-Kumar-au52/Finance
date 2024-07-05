@@ -70,7 +70,7 @@ exports.login = async (req, res) => {
     const userRoles = user.Roles.map(role => role.Role);
 
     // Generate JWT token
-    const token = jwt.sign({ _id: user._id, roles: userRoles }, config.JWT_KEY, { expiresIn: '1h' });
+    const token = jwt.sign({ _id: user._id, roles: userRoles }, config.JWT_KEY, { expiresIn: '30d' });
 
     // Send token and user info in response
     res.status(constants.status_code.header.ok).json({
