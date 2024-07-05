@@ -3,9 +3,18 @@ const BankDetail = require("../../models/bankDetail");
 
 exports.addBankDetail = async (req, res) => {
   try {
+    const { AccNumber } = req.body;
+
+    const existingBank = await BankDetail.findOne({ AccNumber });
+    if (existingBank) {
+      return res
+        .status(constants.status_code.header.conflict) // 409 Conflict
+        .send({ message: 'AccNumber must be unique', success: false });
+    }
     req.body.CreatedBy = req.user._id;
     req.body.UpdatedBy = req.user._id;
-    const bank = await BankDetail.create(req.body);
+    const bank = await BankDetail.findOne({AccNumber});
+
     return res
       .status(constants.status_code.header.ok)
       .send({ message: constants.curd.add, success: true });
