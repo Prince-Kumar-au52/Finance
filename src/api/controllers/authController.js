@@ -116,8 +116,7 @@ exports.getAllUser= async (req, res) => {
       IsDeleted: false,
       $or: [
         { FullName: { $regex: search, $options: 'i' } }, 
-    ]
-      
+    ]  
     };
 
     const totalCount = await User.countDocuments(searchQuery);
