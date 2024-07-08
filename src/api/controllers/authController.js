@@ -114,6 +114,9 @@ exports.getAllUser= async (req, res) => {
        
     const searchQuery = {
       IsDeleted: false,
+      $or: [
+        { FullName: { $regex: search, $options: 'i' } }, 
+    ]
       
     };
 
