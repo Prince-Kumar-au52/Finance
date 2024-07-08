@@ -88,3 +88,20 @@ exports.login = async (req, res) => {
     });
   }
 };
+exports.totalUser= async (req, res) => {
+  try {
+    
+    const user = await User.find()
+    return res.status(constants.status_code.header.ok).send({
+      // message: constants.auth.register_success,
+      userCount:user.length,
+      success: true
+    });
+  } catch (error) {
+    console.error('Error registering user:', error);
+    return res.status(constants.status_code.header.server_error).send({
+      error: errorResponse(error),
+      success: false
+    });
+  }
+};

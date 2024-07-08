@@ -1,25 +1,14 @@
 const constants = require("../../helper/constants");
 const UPIDetail = require("../../models/upiId");
+const User = require("../../models/userModel");
+const Withdrow = require("../../models/withdrow");
 
-exports.addUPIDetail = async (req, res) => {
+exports.addWithdrow = async (req, res) => {
   try {
-    const { UpiId } = req.body;
-
-    const existingBank = await UPIDetail.findOne({ UpiId });
-    if (existingBank) {
-      return res
-      .status(constants.status_code.header.server_error)
-        .send({ error: 'UPI ID must be unique', success: false });
-    }
-    const existingUserUPI = await UPIDetail.findOne({ CreatedBy: req.user._id });
-    if (existingUserUPI) {
-      return res
-        .status(constants.status_code.header.server_error)
-        .send({ Error: 'User has already added a UPI ID', success: false });
-    }
+   
     req.body.CreatedBy = req.user._id;
     req.body.UpdatedBy = req.user._id;
-    const upi = await UPIDetail.create(req.body);
+    const withdrow = await Withdrow.create(req.body);
     return res
       .status(constants.status_code.header.ok)
       .send({ message: constants.curd.add, success: true });
@@ -30,53 +19,67 @@ exports.addUPIDetail = async (req, res) => {
   }
 };
 
-exports.getAllUPIDetail= async (req, res) => {
+exports.getAllWithdrow = async (req, res) => {
   try {
     const { page, pageSize } = req.query;
     const pageNumber = parseInt(page) || 1;
     const size = parseInt(pageSize) || 10;
     const search = req.query.search || '';
-       
+
+    // Construct the search query
     const searchQuery = {
       IsDeleted: false,
-      
+      // ...(search && {
+      //   $or: [
+      //     { Amount: { $regex: search, $options: 'i' } }, // Adjust this field as needed
+      //     // Add more fields for searching if required
+      //   ]
+      // })
     };
 
-    const totalCount = await UPIDetail.countDocuments(searchQuery);
+    // Count total documents matching the search query
+    const totalCount = await Withdrow.countDocuments(searchQuery);
     const totalPages = Math.ceil(totalCount / size);
 
-    const records = await UPIDetail.find(searchQuery)
-      .sort({ CreatedDate: -1 })
+    // Fetch records with pagination and sorting
+    const records = await Withdrow.find(searchQuery)
+      .populate('CreatedBy')
+      .sort({ CreatedDate: -1 }) // Ensure CreatedDate is a valid date field
       .skip((pageNumber - 1) * size)
-      .limit(size)
-      ;
+      .limit(size);
+      const userIds = records.map(record => record.CreatedBy._id);
+      const upiDetails = await UPIDetail.find({ CreatedBy: { $in: userIds } }).lean();
+      const upiIds = upiDetails.map(upi => upi.UpiId);
+    console.log('UPI IDs:', upiIds);
     return res.status(constants.status_code.header.ok).send({
       statusCode: 200,
       data: records,
       success: true,
-      totalCount: totalCount,
+      totalCount,
       count: records.length,
-      pageNumber: pageNumber,
-      totalPages: totalPages,
+      pageNumber,
+      totalPages,
     });
   } catch (error) {
-    res
-      .status(constants.status_code.header.server_error)
-      .send({ statusCode: 500, error: error.message, success: false });
+    return res.status(constants.status_code.header.server_error).send({
+      statusCode: 500,
+      error: error.message,
+      success: false,
+    });
   }
 };
 
-exports.getUPIDetailById = async (req, res) => {
+exports.getWithdrowById = async (req, res) => {
   try {
-    const upi = await UPIDetail.findById(req.params.id);
-    if (!upi) {
+    const withdrow = await Withdrow.findById(req.params.id);
+    if (!withdrow) {
       return res
         .status(404)
-        .json({ error: "UPIDetail not found", success: false });
+        .json({ error: "Withdrow not found", success: false });
     }
     return res
       .status(constants.status_code.header.ok)
-      .send({ statusCode: 200, data: upi, success: true });
+      .send({ statusCode: 200, data: withdrow, success: true });
   } catch (error) {
     return res
       .status(constants.status_code.header.server_error)
@@ -84,15 +87,15 @@ exports.getUPIDetailById = async (req, res) => {
   }
 };
 
-exports.updateUPIDetail = async (req, res) => {
+exports.updateWithdrow = async (req, res) => {
   try {
-    const upi = await UPIDetail.findByIdAndUpdate(req.params.id, req.body, {
+    const withdrow = await Withdrow.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     });
-    if (!upi) {
+    if (!withdrow) {
       return res
         .status(404)
-        .json({ error: "UPIDetail not found", success: false });
+        .json({ error: "Withdrow not found", success: false });
     }
     res
       .status(constants.status_code.header.ok)
@@ -104,15 +107,15 @@ exports.updateUPIDetail = async (req, res) => {
   }
 };
 
-exports.deleteUPIDetail = async (req, res) => {
+exports.deleteWithdrow = async (req, res) => {
   try {
-    const upi = await UPIDetail.findByIdAndUpdate(req.params.id, {
+    const withdrow = await Withdrow.findByIdAndUpdate(req.params.id, {
       IsDeleted: true,
     });
-    if (!upi) {
+    if (!withdrow) {
       return res
         .status(404)
-        .json({ error: "UPIDetail not found", success: false });
+        .json({ error: "Withdrow not found", success: false });
     }
     res
       .status(constants.status_code.header.ok)
