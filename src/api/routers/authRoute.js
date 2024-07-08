@@ -6,7 +6,9 @@ const { registerSchema ,loginSchema}  = require('../validators/authValidator');
 const { validate } = require('../../helper/customValidation');
 
 router.post('/register',validate(registerSchema,'body'),authController.register)
-router.post('/login',authController.login)
+router.post('/login',authController.login);
+// router.get("/User",authController.totalUser)
+router.get("/totalUser",authController.totalUser)
 
  
 
