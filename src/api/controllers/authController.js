@@ -93,7 +93,6 @@ exports.totalUser= async (req, res) => {
     
     const user = await User.find({IsDeleted:false})
     return res.status(constants.status_code.header.ok).send({
-      // message: constants.auth.register_success,
       userCount:user.length,
       success: true
     });
