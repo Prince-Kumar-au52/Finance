@@ -48,12 +48,12 @@ exports.getAllWithdrow = async (req, res) => {
       .skip((pageNumber - 1) * size)
       .limit(size);
       const userIds = records.map(record => record.CreatedBy._id);
-      const upiDetails = await UPIDetail.find({ CreatedBy: { $in: userIds } }).lean();
-      const upiIds = upiDetails.map(upi => upi.UpiId);
-    console.log('UPI IDs:', upiIds);
+      const upiDetails = await UPIDetail.find({ CreatedBy: { $in: userIds } })
+      
     return res.status(constants.status_code.header.ok).send({
       statusCode: 200,
       data: records,
+      UpiId: upiDetails[0].UpiId,
       success: true,
       totalCount,
       count: records.length,
