@@ -127,4 +127,21 @@ exports.deleteWithdrow = async (req, res) => {
   }
 };
 
- 
+exports.getWithdrowForUser = async (req, res) => {
+  try {
+    const id = req.user._id
+    const withdrow = await Withdrow.find({CreatedBy:id});
+    if (!withdrow) {
+      return res
+        .status(404)
+        .json({ error: "Withdrow not found", success: false });
+    }
+    return res
+      .status(constants.status_code.header.ok)
+      .send({ statusCode: 200, data: withdrow, success: true });
+  } catch (error) {
+    return res
+      .status(constants.status_code.header.server_error)
+      .send({ statusCode: 500, error: error.message, success: false });
+  }
+};
