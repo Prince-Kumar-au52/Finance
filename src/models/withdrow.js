@@ -12,6 +12,10 @@ const userSchema = mongoose.Schema({
         type: Boolean,
         default: false 
     },
+    IsRejected:{
+        type: Boolean,
+        default: false 
+    },
     CreatedDate: {
         type: Date,
         default: Date.now()
