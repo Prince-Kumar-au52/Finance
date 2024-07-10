@@ -5,6 +5,7 @@ const Role = require("../../models/roleModel");
 const { errorResponse } = require("../../helper/responseTransformer");
 const config = require('../../helper/config')
 const jwt =require ('jsonwebtoken');
+const withdrow = require("../../models/withdrow");
 
 // Register an user
 exports.register = async (req, res) => {
@@ -92,8 +93,12 @@ exports.totalUser= async (req, res) => {
   try {
     
     const user = await User.find({IsDeleted:false})
+    const withdrowData = await withdrow.find({IsDeleted:false})
+    const withdrowComplete = await withdrow.find({IsDeleted:false,IsVerify:true,IsComleted:true})
     return res.status(constants.status_code.header.ok).send({
       userCount:user.length,
+      withdrowData:withdrowData.length,
+      withdrowComplete:withdrowComplete.length,
       success: true
     });
   } catch (error) {
