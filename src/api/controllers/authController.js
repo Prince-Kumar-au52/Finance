@@ -94,11 +94,13 @@ exports.totalUser= async (req, res) => {
     
     const user = await User.find({IsDeleted:false})
     const withdrowData = await withdrow.find({IsDeleted:false})
+    const withdrowPending = await withdrow.find({IsDeleted:false,IsVerify:false,IsComleted:false})
     const withdrowComplete = await withdrow.find({IsDeleted:false,IsVerify:true,IsComleted:true})
     return res.status(constants.status_code.header.ok).send({
       userCount:user.length,
       withdrowData:withdrowData.length,
       withdrowComplete:withdrowComplete.length,
+      withdrowPending:withdrowPending.length,
       success: true
     });
   } catch (error) {
