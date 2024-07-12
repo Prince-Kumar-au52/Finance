@@ -21,21 +21,32 @@ exports.addWithdrow = async (req, res) => {
 
 exports.getAllWithdrow = async (req, res) => {
   try {
-    const { page, pageSize } = req.query;
+    const { page, pageSize, search = '', type = '' } = req.query;
     const pageNumber = parseInt(page) || 1;
     const size = parseInt(pageSize) || 10;
-    const search = req.query.search || '';
 
     // Construct the search query
-    const searchQuery = {
-      IsDeleted: false,
-      // ...(search && {
-      //   $or: [
-      //     { Amount: { $regex: search, $options: 'i' } }, // Adjust this field as needed
-      //     // Add more fields for searching if required
-      //   ]
-      // })
-    };
+    const searchQuery = { IsDeleted: false };
+    
+    if (type === 'pending') {
+      searchQuery.IsCompleted = false;
+      searchQuery.IsRejected = false;
+      searchQuery.$or = [{ IsVerify: false }, { IsVerify: true }];
+    } 
+    if (type === 'rejected') {
+      searchQuery.IsRejected = true;
+    } 
+    if (type === 'completed') {
+      searchQuery.IsVerify = true;
+      searchQuery.IsCompleted = true;
+    }
+
+    if (search) {
+      searchQuery.$or = [
+        { Amount: { $regex: search, $options: 'i' } },
+        // Add more fields for searching if required
+      ];
+    }
 
     // Count total documents matching the search query
     const totalCount = await Withdrow.countDocuments(searchQuery);
@@ -47,16 +58,28 @@ exports.getAllWithdrow = async (req, res) => {
       .sort({ CreatedDate: -1 }) // Ensure CreatedDate is a valid date field
       .skip((pageNumber - 1) * size)
       .limit(size);
-      const userIds = records.map(record => record.CreatedBy._id);
-      const upiDetails = await UPIDetail.find({ CreatedBy: { $in: userIds } })
-      
+
+    const userIds = records.map(record => record.CreatedBy._id);
+    const upiDetails = await UPIDetail.find({ CreatedBy: { $in: userIds } });
+
+    // Map UPI details to the corresponding users
+    const userUpiMap = upiDetails.reduce((acc, upiDetail) => {
+      acc[upiDetail.CreatedBy] = upiDetail.UpiId;
+      return acc;
+    }, {});
+
+    // Attach UPI details to each record
+    const recordsWithUpi = records.map(record => ({
+      ...record.toObject(),
+      UpiId: userUpiMap[record.CreatedBy._id] || null,
+    }));
+
     return res.status(constants.status_code.header.ok).send({
       statusCode: 200,
-      data: records,
-      UpiId: upiDetails[0].UpiId,
+      data: recordsWithUpi,
       success: true,
       totalCount,
-      count: records.length,
+      count: recordsWithUpi.length,
       pageNumber,
       totalPages,
     });
@@ -68,6 +91,7 @@ exports.getAllWithdrow = async (req, res) => {
     });
   }
 };
+
 
 exports.getWithdrowById = async (req, res) => {
   try {
