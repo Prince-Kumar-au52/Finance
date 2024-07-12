@@ -3,6 +3,7 @@ const getRecordsSchema = Joi.object({
     page: Joi.number().integer().min(1).required(),
     pageSize: Joi.number().integer().min(1).required(),
     search: Joi.string().allow(''),
+    type:Joi.string().allow('')
    
   });
   const idSchema = Joi.object({

@@ -29,7 +29,7 @@ exports.getAllWithdrow = async (req, res) => {
     const searchQuery = { IsDeleted: false };
     
     if (type === 'pending') {
-      searchQuery.IsCompleted = false;
+      searchQuery.IsComleted = false;
       searchQuery.IsRejected = false;
       searchQuery.$or = [{ IsVerify: false }, { IsVerify: true }];
     } 
@@ -38,14 +38,13 @@ exports.getAllWithdrow = async (req, res) => {
     } 
     if (type === 'completed') {
       searchQuery.IsVerify = true;
-      searchQuery.IsCompleted = true;
+      searchQuery.IsComleted = true;
     }
 
     if (search) {
-      searchQuery.$or = [
-        { Amount: { $regex: search, $options: 'i' } },
-        // Add more fields for searching if required
-      ];
+      const users = await User.find({ FullName: { $regex: search, $options: 'i' } }, '_id');
+      const userIds = users.map(user => user._id);
+      searchQuery.CreatedBy = { $in: userIds };
     }
 
     // Count total documents matching the search query
