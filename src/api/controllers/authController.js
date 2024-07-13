@@ -6,6 +6,7 @@ const { errorResponse } = require("../../helper/responseTransformer");
 const config = require('../../helper/config')
 const jwt =require ('jsonwebtoken');
 const withdrow = require("../../models/withdrow");
+const wallet = require("../../models/wallet");
 
 // Register an user
 exports.register = async (req, res) => {
@@ -109,13 +110,19 @@ exports.totalUser= async (req, res) => {
       ],
   });
     const withdrowComplete = await withdrow.find({IsDeleted:false,IsVerify:true,IsComleted:true})
+    const wallets = await wallet.find({ IsDeleted: false });
+    const totalWalletMoney = wallets.reduce((sum, wallet) => sum + wallet.Amount, 0);
+
+    // Calculate the total amount of money withdrawn
+    const totalWithdrawnMoney = withdrowData.reduce((sum, withdrawal) => sum + withdrawal.Amount, 0);
     return res.status(constants.status_code.header.ok).send({
       userCount:user.length,
       withdrowData:withdrowData.length,
       withdrowComplete:withdrowComplete.length,
       withdrowPending:withdrawPending.length,
       withdrowRejected:withdrowRejected.length,
-
+      totalWalletMoney:totalWalletMoney,
+      totalWithdrawnMoney:totalWithdrawnMoney,
       success: true
     });
   } catch (error) {
