@@ -1,11 +1,29 @@
 const constants = require("../../helper/constants");
 const UPIDetail = require("../../models/upiId");
 const User = require("../../models/userModel");
+const wallet = require("../../models/wallet");
 const Withdrow = require("../../models/withdrow");
 
 exports.addWithdrow = async (req, res) => {
   try {
-   
+    const userId = req.user._id;
+
+    // Query to find all wallet records created by the user
+    const walletRecords = await wallet.find({ CreatedBy: userId, IsDeleted: false });
+    const totalMoney = walletRecords.reduce((sum, record) => sum + record.Amount, 0);
+
+    // Query to find all withdrawal records created by the user
+    const withdrawalRecords = await Withdrow.find({ CreatedBy: userId, IsDeleted: false,IsComleted:true });
+    const totalWithdrawn = withdrawalRecords.reduce((sum, record) => sum + record.Amount, 0);
+
+    const remainingMoney = totalMoney - totalWithdrawn;
+
+    // Check if the withdrawal amount is greater than the remaining money
+    if (req.body.Amount > remainingMoney) {
+      return res
+        .status(constants.status_code.header.server_error)
+        .send({ error: 'Insufficient Amount', success: false });
+    }
     req.body.CreatedBy = req.user._id;
     req.body.UpdatedBy = req.user._id;
     const withdrow = await Withdrow.create(req.body);
