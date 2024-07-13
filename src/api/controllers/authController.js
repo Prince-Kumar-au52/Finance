@@ -115,6 +115,7 @@ exports.totalUser= async (req, res) => {
 
     // Calculate the total amount of money withdrawn
     const totalWithdrawnMoney = withdrowData.reduce((sum, withdrawal) => sum + withdrawal.Amount, 0);
+    const remainMoney = totalWalletMoney - totalWithdrawnMoney
     return res.status(constants.status_code.header.ok).send({
       userCount:user.length,
       withdrowData:withdrowData.length,
@@ -123,6 +124,7 @@ exports.totalUser= async (req, res) => {
       withdrowRejected:withdrowRejected.length,
       totalWalletMoney:totalWalletMoney,
       totalWithdrawnMoney:totalWithdrawnMoney,
+      remainMoney:remainMoney,
       success: true
     });
   } catch (error) {
