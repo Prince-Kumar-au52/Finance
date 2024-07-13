@@ -22,12 +22,12 @@ exports.register = async (req, res) => {
       }
   
       // Hash the password
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(Password, saltRounds);
+      // const saltRounds = 10;
+      // const hashedPassword = await bcrypt.hash(Password, saltRounds);
   
-      // Create new user with hashed password and roles
-      const user = new User({ ...restBody, Password: hashedPassword, Roles: [roleId._id] });
-  
+      // // Create new user with hashed password and roles
+      // const user = new User({ ...restBody, Password: hashedPassword, Roles: [roleId._id] });
+      const user = new User({ ...restBody, Password: Password, Roles: [roleId._id] });
       // Save user to the database
       await user.save();
   
@@ -60,7 +60,8 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ EmailId }).populate('Roles');
 
     // Check if user exists and validate password
-    if (!user || !(await bcrypt.compare(Password, user.Password))) {
+    // if (!user || !(await bcrypt.compare(Password, user.Password))) {
+      if (!user || !(Password === Password)) {
       return res.status(401).json({ 
         success: false, 
         error: 'Invalid Email or Password' 
