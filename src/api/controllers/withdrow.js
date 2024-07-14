@@ -6,8 +6,14 @@ const Withdrow = require("../../models/withdrow");
 
 exports.addWithdrow = async (req, res) => {
   try {
-    const userId = req.user._id;
 
+    const userId = req.user._id;
+    const userUPI = await UPIDetail.findOne({ CreatedBy: userId });
+    if (!userUPI ) {
+      return res
+        .status(constants.status_code.header.server_error)
+        .send({ error: 'Please Add UPI Detail', success: false });
+    }
     // Query to find all wallet records created by the user
     const walletRecords = await wallet.find({ CreatedBy: userId, IsDeleted: false });
     const totalMoney = walletRecords.reduce((sum, record) => sum + record.Amount, 0);
