@@ -4,6 +4,7 @@ let cors = require("cors");
 require('dotenv').config()
 const allRouters = require('./api/routers/routeIndex');
 const fileUpload = require("express-fileupload");
+var indexRouter = require('./api/routers/index');
  
 const path = require('path');
 const { connectDB } = require('./db/db');
@@ -24,6 +25,7 @@ app.use(cors());
 
 //routes
 app.use("/v1", allRouters);
+app.use('/', indexRouter);
 
 
 const PORT = process.env.PORT || 5000;
