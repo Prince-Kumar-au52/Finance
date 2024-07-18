@@ -22,7 +22,7 @@ app.use(fileUpload({
 app.use(express.json());
 app.use(express.urlencoded({extended:false}))
 app.use(cors());
-app.use(cors({ origin: "https://finance-075c.onrender.com" }));
+// app.use(cors({ origin: "https://finance-075c.onrender.com" }));
 
 //routes
 app.use("/v1", allRouters);
