@@ -1,20 +1,25 @@
 const constants = require("../../helper/constants");
-const BankDetail = require("../../models/bankDetail");
+const UPIDetail = require("../../models/upiId");
 
-exports.addBankDetail = async (req, res) => {
+exports.addUPIDetail = async (req, res) => {
   try {
-    const { AccNumber } = req.body;
+    const { UpiId } = req.body;
 
-    const existingBank = await BankDetail.findOne({ AccNumber });
+    const existingBank = await UPIDetail.findOne({ UpiId });
     if (existingBank) {
       return res
+      .status(constants.status_code.header.server_error)
+        .send({ error: 'UPI ID must be unique', success: false });
+    }
+    const existingUserUPI = await UPIDetail.findOne({ CreatedBy: req.user._id });
+    if (existingUserUPI) {
+      return res
         .status(constants.status_code.header.server_error)
-        .send({ message: 'AccNumber must be unique', success: false });
+        .send({ Error: 'User has already added a UPI ID', success: false });
     }
     req.body.CreatedBy = req.user._id;
     req.body.UpdatedBy = req.user._id;
-    const bank = await BankDetail.create(req.body);;
-
+    const upi = await UPIDetail.create(req.body);
     return res
       .status(constants.status_code.header.ok)
       .send({ message: constants.curd.add, success: true });
@@ -25,7 +30,7 @@ exports.addBankDetail = async (req, res) => {
   }
 };
 
-exports.getAllBankDetail= async (req, res) => {
+exports.getAllUPIDetail= async (req, res) => {
   try {
     const { page, pageSize } = req.query;
     const pageNumber = parseInt(page) || 1;
@@ -37,10 +42,10 @@ exports.getAllBankDetail= async (req, res) => {
       
     };
 
-    const totalCount = await BankDetail.countDocuments(searchQuery);
+    const totalCount = await UPIDetail.countDocuments(searchQuery);
     const totalPages = Math.ceil(totalCount / size);
 
-    const records = await BankDetail.find(searchQuery)
+    const records = await UPIDetail.find(searchQuery)
       .sort({ CreatedDate: -1 })
       .skip((pageNumber - 1) * size)
       .limit(size)
@@ -61,17 +66,17 @@ exports.getAllBankDetail= async (req, res) => {
   }
 };
 
-exports.getBankDetailById = async (req, res) => {
+exports.getUPIDetailById = async (req, res) => {
   try {
-    const bank = await BankDetail.findById(req.params.id);
-    if (!bank) {
+    const upi = await UPIDetail.findById(req.params.id);
+    if (!upi) {
       return res
         .status(404)
-        .json({ error: "BankDetail not found", success: false });
+        .json({ error: "UPIDetail not found", success: false });
     }
     return res
       .status(constants.status_code.header.ok)
-      .send({ statusCode: 200, data: bank, success: true });
+      .send({ statusCode: 200, data: upi, success: true });
   } catch (error) {
     return res
       .status(constants.status_code.header.server_error)
@@ -79,15 +84,15 @@ exports.getBankDetailById = async (req, res) => {
   }
 };
 
-exports.updateBankDetail = async (req, res) => {
+exports.updateUPIDetail = async (req, res) => {
   try {
-    const bank = await BankDetail.findByIdAndUpdate(req.params.id, req.body, {
+    const upi = await UPIDetail.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     });
-    if (!bank) {
+    if (!upi) {
       return res
         .status(404)
-        .json({ error: "BankDetail not found", success: false });
+        .json({ error: "UPIDetail not found", success: false });
     }
     res
       .status(constants.status_code.header.ok)
@@ -99,15 +104,15 @@ exports.updateBankDetail = async (req, res) => {
   }
 };
 
-exports.deleteBankDetail = async (req, res) => {
+exports.deleteUPIDetail = async (req, res) => {
   try {
-    const bank = await BankDetail.findByIdAndUpdate(req.params.id, {
+    const upi = await UPIDetail.findByIdAndUpdate(req.params.id, {
       IsDeleted: true,
     });
-    if (!bank) {
+    if (!upi) {
       return res
         .status(404)
-        .json({ error: "BankDetail not found", success: false });
+        .json({ error: "UPIDetail not found", success: false });
     }
     res
       .status(constants.status_code.header.ok)

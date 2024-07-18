@@ -15,7 +15,7 @@ const auth = async(req, res, next) => {
         req.token = token
         next()
     } catch (error) {
-        res.status(200).send({ statusCode : 500, message: constants.auth.not_authorize })
+        res.status(401).send({ statusCode : 401, message: constants.auth.not_authorize })
     }
 
 }

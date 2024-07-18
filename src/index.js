@@ -3,6 +3,8 @@ const app = express();
 let cors = require("cors");
 require('dotenv').config()
 const allRouters = require('./api/routers/routeIndex');
+const fileUpload = require("express-fileupload");
+var indexRouter = require('./api/routers/index');
  
 const path = require('path');
 const { connectDB } = require('./db/db');
@@ -14,20 +16,16 @@ connectDB().catch(err => {
     console.error('Error connecting to MongoDB:', err);
     process.exit(1);
   });
-
+app.use(fileUpload({
+    useTempFiles:true
+  }))
 app.use(express.json());
 app.use(express.urlencoded({extended:false}))
 app.use(cors());
 
 //routes
 app.use("/v1", allRouters);
-
-
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-
-
-
-
+app.use('/', indexRouter);
 
 
 const PORT = process.env.PORT || 5000;

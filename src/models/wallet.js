@@ -1,10 +1,14 @@
 const mongoose = require('mongoose')
  
-const bankSchema = mongoose.Schema({
-    UpiId: {
-        type: String,
+const walletSchema = mongoose.Schema({
+    Amount: {
+        type: Number,
     },
     CreatedDate: {
+        type: Date,
+        default: Date.now()
+    },
+    UpdatedDate: {
         type: Date,
         default: Date.now()
     },
@@ -14,17 +18,17 @@ const bankSchema = mongoose.Schema({
     },
     CreatedBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User' 
+        ref: "User"
     },
     UpdatedBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: "User"
     },
   
 
 
 },)
 
-const UPIDetail = mongoose.model('UPIDetail', bankSchema)
+const wallet = mongoose.model('Wallet', walletSchema)
 
-module.exports = UPIDetail
+module.exports = wallet

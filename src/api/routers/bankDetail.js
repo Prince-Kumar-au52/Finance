@@ -16,6 +16,5 @@ router.get('/BankDetail/:id',auth,validate(idSchema,'params'),getBankDetailById)
 router.patch('/updateBankDetail/:id',validate(idSchema,'params'),auth,updateBankDetail)
 router.delete('/deleteBankDetail/:id',auth,validate(idSchema,'params'),deleteBankDetail)
 
- 
 
 module.exports = router
