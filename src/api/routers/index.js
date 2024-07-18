@@ -15,10 +15,10 @@ var uniqid = require('uniqid');
 //PAY
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++
 router.get('/pay', async function (req, res, next) {
-  const amount = req.body.amount;
-  if (!amount) {
-    return res.status(400).send('Amount is required');
-  }
+  // const amount = req.body.amount;
+  // if (!amount) {
+  //   return res.status(400).send('Amount is required================');
+  // }
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //Store IT IN DB ALSO
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -26,18 +26,18 @@ router.get('/pay', async function (req, res, next) {
   store.set('uuid', { tx: tx_uuid });
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++
   let normalPayLoad = {
-    "merchantId": "M110NES2UDXSUAT",
-    "merchantTransactionId": tx_uuid,
-    "merchantUserId": "MUID123",
-    "amount": 1000,
-    "redirectUrl": "http://localhost:3000/pay-return-url/",
-    "redirectMode": "POST",
-    "callbackUrl": "http://localhost:3000/pay-return-url/",
-    "mobileNumber": "9999999999",
-    "paymentInstrument": {
-      "type": "PAY_PAGE"
-    }
-  }
+    merchantId: "M110NES2UDXSUAT",
+    merchantTransactionId: tx_uuid,
+    merchantUserId: "MUID123",
+    amount: 1000,
+    redirectUrl: "https://finance-075c.onrender.com/pay-return-url/",
+    redirectMode: "POST",
+    callbackUrl: "https://finance-075c.onrender.com/pay-return-url/",
+    mobileNumber: "9999999999",
+    paymentInstrument: {
+      type: "PAY_PAGE",
+    },
+  };
   let saltKey = '5afb2d8c-5572-47cf-a5a0-93bb79647ffa';
   let saltIndex = 1
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++
