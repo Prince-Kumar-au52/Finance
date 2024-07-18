@@ -14,22 +14,23 @@ var uniqid = require('uniqid');
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //PAY
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++
-router.get('/pay', async function (req, res, next) {
-  // const amount = req.body.amount;
-  // if (!amount) {
-  //   return res.status(400).send('Amount is required================');
-  // }
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //Store IT IN DB ALSO
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++
+router.get("/pay", async function (req, res, next) {
+  Example: amount = req.query.amount;
+  if (!amount) {
+    return res.status(400).send({ error: 'Amount is required', success: false });
+      // .send('Amount is required');
+  }
+
+  // Store transaction UUID
   let tx_uuid = uniqid();
-  store.set('uuid', { tx: tx_uuid });
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  store.set("uuid", { tx: tx_uuid });
+
+  // Payload for PhonePe API
   let normalPayLoad = {
     merchantId: "M110NES2UDXSUAT",
     merchantTransactionId: tx_uuid,
     merchantUserId: "MUID123",
-    amount: 1000,
+    amount:amount*100,
     redirectUrl: "https://finance-075c.onrender.com/pay-return-url/",
     redirectMode: "POST",
     callbackUrl: "https://finance-075c.onrender.com/pay-return-url/",
@@ -38,34 +39,49 @@ router.get('/pay', async function (req, res, next) {
       type: "PAY_PAGE",
     },
   };
-  let saltKey = '5afb2d8c-5572-47cf-a5a0-93bb79647ffa';
-  let saltIndex = 1
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+  let saltKey = "5afb2d8c-5572-47cf-a5a0-93bb79647ffa";
+  let saltIndex = 1;
+
+  // Encode payload to Base64
   let bufferObj = Buffer.from(JSON.stringify(normalPayLoad), "utf8");
   let base64String = bufferObj.toString("base64");
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //console.log(base64String)
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++
-  let string = base64String + '/pg/v1/pay' + saltKey;
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+  // Create checksum
+  let string = base64String + "/pg/v1/pay" + saltKey;
   let sha256_val = sha256(string);
-  let checksum = sha256_val + '###' + saltIndex;
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //console.log(checksum);
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++
-  axios.post('https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay', {
-    'request': base64String
-  }, {
-    headers: {
-      'Content-Type': 'application/json',
-      'X-VERIFY': checksum,
-      'accept': 'application/json'
-    }
-  }).then(function (response) {
-    res.redirect(response.data.data.instrumentResponse.redirectInfo.url);
-  }).catch(function (error) {
-    res.render('index', { page_respond_data: JSON.stringify(error) });
-  });
+  let checksum = sha256_val + "###" + saltIndex;
+
+  // Make API request to PhonePe
+  axios
+    .post(
+      "https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay",
+      {
+        request: base64String,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-VERIFY": checksum,
+          accept: "application/json",
+        },
+      }
+    )
+    .then(function (response) {
+      // Redirect the user to the PhonePe payment page
+      res.json({
+        success: true,
+        message: "Redirecting to PhonePe",
+        redirectUrl: response.data.data.instrumentResponse.redirectInfo.url,
+      });
+    })
+    .catch(function (error) {
+      res.status(500).json({
+        success: false,
+        message: "Payment initiation failed",
+        error: error.message,
+      });
+    });
 });
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //PAY RETURN
