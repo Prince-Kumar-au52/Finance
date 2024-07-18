@@ -29,7 +29,7 @@ router.get('/pay', async function (req, res, next) {
     "merchantId": "M110NES2UDXSUAT",
     "merchantTransactionId": tx_uuid,
     "merchantUserId": "MUID123",
-    "amount": amount*100,
+    "amount": 1000,
     "redirectUrl": "http://localhost:3000/pay-return-url/",
     "redirectMode": "POST",
     "callbackUrl": "http://localhost:3000/pay-return-url/",
