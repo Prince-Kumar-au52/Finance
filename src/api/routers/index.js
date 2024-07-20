@@ -5,13 +5,15 @@ var axios = require('axios');
 var sha256 = require('sha256');
 var uniqid = require('uniqid');
 var bodyParser = require('body-parser');
+var Payment = require('../../models/wallet'); // Import the Payment model
+const auth = require('../middleware/auth'); // Import the authentication middleware
 
 // Use body-parser middleware to parse request bodies
 router.use(bodyParser.json());
 router.use(bodyParser.urlencoded({ extended: true }));
 
 // PAY Route
-router.get("/pay", async function (req, res, next) {
+router.get("/pay", auth, async function (req, res, next) {
   let amount = req.query.amount;
   if (!amount) {
     return res.status(400).send({ error: 'Amount is required', success: false });
@@ -19,15 +21,18 @@ router.get("/pay", async function (req, res, next) {
 
   let tx_uuid = uniqid();
   store.set("uuid", { tx: tx_uuid });
-
+  
+  // console.log(req.user._id);
+  const userID =req.user._id
   let normalPayLoad = {
     merchantId: "M110NES2UDXSUAT",
     merchantTransactionId: tx_uuid,
-    merchantUserId: "MUID123",
+    merchantUserId: req.user._id, // Use authenticated user's ID
     amount: amount * 100,
-    redirectUrl: "http://localhost:5000/pay-return-url",
+    redirectUrl: `http://localhost:5000/pay-return-url?UserId=${req.user._id}`,
+    // redirectUrl: "http://localhost:5000/pay-return-url?User=req.user._id",
     redirectMode: "POST",
-    callbackUrl: "http://localhost:5000/pay-return-url",
+    callbackUrl: `http://localhost:5000/pay-return-url?UseIdr=${req.user._id}`,
     mobileNumber: "9999999999",
     paymentInstrument: {
       type: "PAY_PAGE",
@@ -72,7 +77,11 @@ router.get("/pay", async function (req, res, next) {
 // PAY RETURN Route
 router.post('/pay-return-url', async function (req, res) {
   const { code, merchantId, transactionId, providerReferenceId, amount } = req.body;
-  console.log('Received callback data:', req.body);
+
+  // console.log(merchantUserId, "---");
+  // console.log(req.body)
+  // console.log(req.query.UserId)
+  const userId = req.query.UserId
 
   if (code === 'PAYMENT_SUCCESS' && merchantId && transactionId && providerReferenceId) {
     let saltKey = '5afb2d8c-5572-47cf-a5a0-93bb79647ffa';
@@ -94,11 +103,24 @@ router.post('/pay-return-url', async function (req, res) {
     };
 
     axios.request(options)
-      .then(function (response) {
+      .then(async function (response) {
+        // Save the payment return response in the database
+        const payment = new Payment({
+          code,
+          merchantId,
+          transactionId,
+          providerReferenceId,
+          Amount: amount / 100,
+          response: response.data,
+          CreatedBy: userId, 
+          UpdatedBy: userId, 
+        });
+
+        await payment.save();
+
         res.json({
           success: true,
           message: "Payment verification successful",
-          data: response.data
         });
       })
       .catch(function (error) {
