@@ -18,7 +18,11 @@ router.get("/pay", auth, async function (req, res, next) {
   if (!amount) {
     return res.status(400).send({ error: 'Amount is required', success: false });
   }
-
+  if (amount < 500) {
+    return res
+      .status(400)
+      .send({ statusCode: 400, error: 'Amount should not be less than 500', success: false });
+  }
   let tx_uuid = uniqid();
   store.set("uuid", { tx: tx_uuid });
   
