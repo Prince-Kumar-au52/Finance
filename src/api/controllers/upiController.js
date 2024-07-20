@@ -4,31 +4,32 @@ const UPIDetail = require("../../models/upiId");
 exports.addUPIDetail = async (req, res) => {
   try {
     const { UpiId } = req.body;
-const existingUserUPI = await UPIDetail.findOne({ CreatedBy: req.user._id });
-if(!existingUserUPI){
-   const existingBank = await UPIDetail.findOne({ UpiId });
+// const existingUserUPI = await UPIDetail.findOne({ CreatedBy: req.user._id });
+// if(!existingUserUPI){
+//    const existingBank = await UPIDetail.findOne({ UpiId });
+//     if (existingBank) {
+//       return res
+//       .status(constants.status_code.header.server_error)
+//         .send({ error: 'UPI ID must be unique', success: false });
+//     }
+// }else{
+//   return res
+//   .status(constants.status_code.header.server_error)
+//   .send({ error: 'User has already added a UPI ID', success: false });
+// }
+    const existingBank = await UPIDetail.findOne({ UpiId });
     if (existingBank) {
       return res
       .status(constants.status_code.header.server_error)
         .send({ error: 'UPI ID must be unique', success: false });
     }
-}else{
-  return res
-  .status(constants.status_code.header.server_error)
-  .send({ error: 'User has already added a UPI ID', success: false });
-}
-    // const existingBank = await UPIDetail.findOne({ UpiId });
-    // if (existingBank) {
-    //   return res
-    //   .status(constants.status_code.header.server_error)
-    //     .send({ error: 'UPI ID must be unique', success: false });
-    // }
-    // const existingUserUPI = await UPIDetail.findOne({ CreatedBy: req.user._id });
-    // if (existingUserUPI) {
-    //   return res
-    //     .status(constants.status_code.header.server_error)
-    //     .send({ error: 'User has already added a UPI ID', success: false });
-    // }
+    const existingUserUPI = await UPIDetail.findOne({ CreatedBy: req.user._id });
+    if (existingUserUPI) {
+      return res
+        .status(constants.status_code.header.server_error)
+        .send({ error: 'User has already added a UPI ID', success: false });
+    }
+    
     req.body.CreatedBy = req.user._id;
     req.body.UpdatedBy = req.user._id;
     const upi = await UPIDetail.create(req.body);

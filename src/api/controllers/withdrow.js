@@ -23,12 +23,14 @@ exports.addWithdrow = async (req, res) => {
     const totalWithdrawn = withdrawalRecords.reduce((sum, record) => sum + record.Amount, 0);
 
     const remainingMoney = totalMoney - totalWithdrawn;
+    
+    const maxWithdrawalAmount = remainingMoney * 0.7;
 
-    // Check if the withdrawal amount is greater than the remaining money
-    if (req.body.Amount > remainingMoney) {
+    // Check if the withdrawal amount exceeds the maximum allowable amount
+    if (req.body.Amount > maxWithdrawalAmount) {
       return res
         .status(constants.status_code.header.server_error)
-        .send({ error: 'Insufficient Amount', success: false });
+        .send({ error: `Withdrawal amount exceeds the allowable limit of 70% (${remainingMoney})`, success: false });
     }
     req.body.CreatedBy = req.user._id;
     req.body.UpdatedBy = req.user._id;
