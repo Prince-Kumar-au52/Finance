@@ -35,6 +35,7 @@ exports.getAllWallet= async (req, res) => {
 
     const records = await Wallet.find(searchQuery)
       .sort({ CreatedDate: -1 })
+      .populate('CreatedBy')
       .skip((pageNumber - 1) * size)
       .limit(size)
       ;
