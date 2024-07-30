@@ -18,42 +18,57 @@ exports.addWallet = async (req, res) => {
   }
 };
 
-exports.getAllWallet= async (req, res) => {
+exports.getAllWallet = async (req, res) => {
   try {
-    const { page, pageSize } = req.query;
+    const { page, pageSize, search } = req.query;
     const pageNumber = parseInt(page) || 1;
     const size = parseInt(pageSize) || 10;
-    const search = req.query.search || '';
-       
+    const searchText = search || '';
+
+    // Base search query
     const searchQuery = {
       IsDeleted: false,
-      
     };
 
-    const totalCount = await Wallet.countDocuments(searchQuery);
+    // Fetch all records matching the base query and populate CreatedBy field
+    let records = await Wallet.find(searchQuery)
+      .sort({ CreatedDate: -1 })
+      .populate('CreatedBy');
+
+    // Filter records based on search text in CreatedBy.FullName
+    if (searchText) {
+      records = records.filter(record => 
+        record.CreatedBy && record.CreatedBy.FullName.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+
+    // Calculate the total count of filtered records
+    const totalCount = records.length;
     const totalPages = Math.ceil(totalCount / size);
 
-    const records = await Wallet.find(searchQuery)
-      .sort({ CreatedDate: -1 })
-      .populate('CreatedBy')
-      .skip((pageNumber - 1) * size)
-      .limit(size)
-      ;
+    // Apply pagination to the filtered records
+    const paginatedRecords = records.slice((pageNumber - 1) * size, pageNumber * size);
+
     return res.status(constants.status_code.header.ok).send({
       statusCode: 200,
-      data: records,
+      data: paginatedRecords,
       success: true,
       totalCount: totalCount,
-      count: records.length,
+      count: paginatedRecords.length,
       pageNumber: pageNumber,
       totalPages: totalPages,
     });
   } catch (error) {
-    res
-      .status(constants.status_code.header.server_error)
-      .send({ statusCode: 500, error: error.message, success: false });
+    res.status(constants.status_code.header.server_error).send({
+      statusCode: 500,
+      error: error.message,
+      success: false,
+    });
   }
 };
+
+
+
 
 exports.getUPIWalletById = async (req, res) => {
   try {
