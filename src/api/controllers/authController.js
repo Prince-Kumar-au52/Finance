@@ -6,61 +6,95 @@ const { errorResponse } = require("../../helper/responseTransformer");
 const config = require('../../helper/config')
 const jwt =require ('jsonwebtoken');
 const withdrow = require("../../models/withdrow");
-const wallet = require("../../models/wallet");
+const Wallet = require("../../models/wallet");
 const crypto = require('crypto');
-
+const mongoose = require('mongoose');
 
 exports.register = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const { Role: role, Password: password,  ...restBody } = req.body;
- 
+    const { Role: role, Password: password, ReferalCode: inputReferralCode, ...restBody } = req.body;
+
     // Find role by name
-    const roleId = await Role.findOne({ Role: role });
+    const roleId = await Role.findOne({ Role: role }).session(session);
     if (!roleId) {
-      return res.status(constants.status_code.header.ok).send({
-        statusCode: 200,
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(constants.status_code.header.server_error).send({
         error: "Role does not exist in DB",
         success: false
       });
     }
 
-    // Generate a unique referral code
+    // Check if referral code exists
+    let referredUser = null;
+    if (inputReferralCode) {
+      referredUser = await User.findOne({ ReferalCode: inputReferralCode }).session(session);
+      if (!referredUser) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(constants.status_code.header.server_error).send({
+          error: "Referral code does not exist",
+          success: false
+        });
+      }
+    }
+
+    // Generate a unique referral code for the new user
     let referralCode;
     let codeExists;
     do {
       const namePart = req.body.FullName.replace(/\s+/g, '').substring(0, 2).toUpperCase();
       const randomPart = crypto.randomInt(1000, 10000).toString();
       referralCode = `${namePart}${randomPart}`;
-      codeExists = await User.findOne({ referralCode });
+      codeExists = await User.findOne({ ReferalCode: referralCode }).session(session);
     } while (codeExists);
 
-    // Hash the password
+    // // Hash the password
     // const saltRounds = 10;
     // const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Create new user with hashed password and roles
     const user = new User({
       ...restBody,
-      Password: password, // Use hashedPassword if hashing is enabled
+      Password: password,
       Roles: [roleId._id],
       ReferalCode: referralCode
     });
 
-    // Save user to the database
-    await user.save();
+    // Save new user to the database
+    await user.save({ session });
+
+
+    // Update referred user's wallet balance if referral code is provided and valid
+    if (referredUser) {
+      const referredUserWallet = await Wallet.findOne({ CreatedBy: referredUser._id }).session(session);
+      if (referredUserWallet) {
+        const bonusAmount = referredUserWallet.Amount * 0.10;
+        referredUserWallet.Amount += bonusAmount;
+        await referredUserWallet.save({ session });
+      }
+    }
+
+    await session.commitTransaction();
+    session.endSession();
 
     return res.status(constants.status_code.header.ok).send({
       message: constants.auth.register_success,
       success: true
     });
   } catch (error) {
-    console.error('Error registering user:', error);
+    await session.abortTransaction();
+    session.endSession();
     return res.status(constants.status_code.header.server_error).send({
       error: errorResponse(error),
       success: false
     });
   }
 };
+
 
 
 exports.login = async (req, res) => {
