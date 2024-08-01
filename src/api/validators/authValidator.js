@@ -3,6 +3,7 @@ const Joi = require('joi');
 
 const registerSchema =  Joi.object().keys({
         FullName: Joi.string().required().error(new Error('FullName is required')),
+        ReferalCode:Joi.string(),
         Password:Joi.string(),
         Role: Joi.string().valid("Admin","User").required(), // Assuming RoleId is a string
         IsDeleted: Joi.boolean().default(false),

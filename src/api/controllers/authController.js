@@ -7,43 +7,60 @@ const config = require('../../helper/config')
 const jwt =require ('jsonwebtoken');
 const withdrow = require("../../models/withdrow");
 const wallet = require("../../models/wallet");
+const crypto = require('crypto');
 
-// Register an user
+
 exports.register = async (req, res) => {
-    try {
-      const { Role: role, Password: Password, ...restBody } = req.body;
-  // Find role by name
-      const roleId = await Role.findOne({ Role: role });
-      if (!roleId) {
-        return res.status(constants.status_code.header.ok).send({
-          statusCode: 200,
-          error: "Role does not exist in DB",
-          success: false
-        });
-      }
-  
-      // Hash the password
-      // const saltRounds = 10;
-      // const hashedPassword = await bcrypt.hash(Password, saltRounds);
-  
-      // // Create new user with hashed password and roles
-      // const user = new User({ ...restBody, Password: hashedPassword, Roles: [roleId._id] });
-      const user = new User({ ...restBody, Password: Password, Roles: [roleId._id] });
-      // Save user to the database
-      await user.save();
-  
+  try {
+    const { Role: role, Password: password,  ...restBody } = req.body;
+ 
+    // Find role by name
+    const roleId = await Role.findOne({ Role: role });
+    if (!roleId) {
       return res.status(constants.status_code.header.ok).send({
-        message: constants.auth.register_success,
-        success: true
-      });
-    } catch (error) {
-      console.error('Error registering user:', error);
-      return res.status(constants.status_code.header.server_error).send({
-        error: errorResponse(error),
+        statusCode: 200,
+        error: "Role does not exist in DB",
         success: false
       });
     }
-  };
+
+    // Generate a unique referral code
+    let referralCode;
+    let codeExists;
+    do {
+      const namePart = req.body.FullName.replace(/\s+/g, '').substring(0, 2).toUpperCase();
+      const randomPart = crypto.randomInt(1000, 10000).toString();
+      referralCode = `${namePart}${randomPart}`;
+      codeExists = await User.findOne({ referralCode });
+    } while (codeExists);
+
+    // Hash the password
+    // const saltRounds = 10;
+    // const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create new user with hashed password and roles
+    const user = new User({
+      ...restBody,
+      Password: password, // Use hashedPassword if hashing is enabled
+      Roles: [roleId._id],
+      ReferalCode: referralCode
+    });
+
+    // Save user to the database
+    await user.save();
+
+    return res.status(constants.status_code.header.ok).send({
+      message: constants.auth.register_success,
+      success: true
+    });
+  } catch (error) {
+    console.error('Error registering user:', error);
+    return res.status(constants.status_code.header.server_error).send({
+      error: errorResponse(error),
+      success: false
+    });
+  }
+};
 
 
 exports.login = async (req, res) => {

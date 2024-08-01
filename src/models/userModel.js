@@ -6,6 +6,9 @@ const userSchema = mongoose.Schema({
         required: true,
         trim: true
     },
+    ReferalCode: {
+        type: String
+    },
     
     EmailId: {
         type: String,
