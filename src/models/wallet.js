@@ -1,14 +1,13 @@
 const mongoose = require('mongoose')
  
 const walletSchema = mongoose.Schema({
-    Amount: {
-        type: Number,
-    },
+    code: String,
+    merchantId: String,
+    transactionId: String,
+    providerReferenceId: String,
+    Amount: Number,
+    response: Object,
     CreatedDate: {
-        type: Date,
-        default: Date.now()
-    },
-    UpdatedDate: {
         type: Date,
         default: Date.now()
     },
@@ -18,11 +17,11 @@ const walletSchema = mongoose.Schema({
     },
     CreatedBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
+        ref: 'User' 
     },
     UpdatedBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
+        ref: 'User'
     },
   
 

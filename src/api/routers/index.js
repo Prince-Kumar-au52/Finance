@@ -1,123 +1,146 @@
 var express = require('express');
 var router = express.Router();
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++
 var store = require('store');
 var axios = require('axios');
 var sha256 = require('sha256');
 var uniqid = require('uniqid');
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++
-/* GET home page. */
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// router.get('/', async function (req, res, next) {
-//   res.render('index', { page_respond_data: 'Please Pay & Repond From The Payment Gateway Will Come In This Section' });
-// });
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//PAY
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++
-router.get('/pay', async function (req, res, next) {
-  // const amount = req.body.amount;
-  // if (!amount) {
-  //   return res.status(400).send('Amount is required================');
-  // }
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //Store IT IN DB ALSO
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++
+var bodyParser = require('body-parser');
+var Payment = require('../../models/wallet'); // Import the Payment model
+const auth = require('../middleware/auth'); // Import the authentication middleware
+
+// Use body-parser middleware to parse request bodies
+router.use(bodyParser.json());
+router.use(bodyParser.urlencoded({ extended: true }));
+
+// PAY Route
+router.get("/pay", auth, async function (req, res, next) {
+  let amount = req.query.amount;
+  if (!amount) {
+    return res.status(400).send({ error: 'Amount is required', success: false });
+  }
+  if (amount < 500) {
+    return res
+      .status(400)
+      .send({ statusCode: 400, error: 'Amount should not be less than 500', success: false });
+  }
   let tx_uuid = uniqid();
-  store.set('uuid', { tx: tx_uuid });
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  store.set("uuid", { tx: tx_uuid });
+  
+  // console.log(req.user._id);
+  const userID =req.user._id
   let normalPayLoad = {
     merchantId: "M110NES2UDXSUAT",
     merchantTransactionId: tx_uuid,
-    merchantUserId: "MUID123",
-    amount: 1000,
-    redirectUrl: "https://finance-075c.onrender.com/pay-return-url/",
+    merchantUserId: req.user._id, // Use authenticated user's ID
+    amount: amount * 100,
+    redirectUrl: `http://localhost:5000/pay-return-url?UserId=${req.user._id}`,
+    // redirectUrl: "http://localhost:5000/pay-return-url?User=req.user._id",
     redirectMode: "POST",
-    callbackUrl: "https://finance-075c.onrender.com/pay-return-url/",
+    callbackUrl: `http://localhost:5000/pay-return-url?UseIdr=${req.user._id}`,
     mobileNumber: "9999999999",
     paymentInstrument: {
       type: "PAY_PAGE",
     },
   };
-  let saltKey = '5afb2d8c-5572-47cf-a5a0-93bb79647ffa';
-  let saltIndex = 1
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+  let saltKey = "5afb2d8c-5572-47cf-a5a0-93bb79647ffa";
+  let saltIndex = 1;
+
   let bufferObj = Buffer.from(JSON.stringify(normalPayLoad), "utf8");
   let base64String = bufferObj.toString("base64");
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //console.log(base64String)
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++
-  let string = base64String + '/pg/v1/pay' + saltKey;
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+  let string = base64String + "/pg/v1/pay" + saltKey;
   let sha256_val = sha256(string);
-  let checksum = sha256_val + '###' + saltIndex;
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //console.log(checksum);
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++
-  axios.post('https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay', {
-    'request': base64String
+  let checksum = sha256_val + "###" + saltIndex;
+
+  axios.post("https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay", {
+    request: base64String,
   }, {
     headers: {
-      'Content-Type': 'application/json',
-      'X-VERIFY': checksum,
-      'accept': 'application/json'
-    }
-  }).then(function (response) {
-    res.redirect(response.data.data.instrumentResponse.redirectInfo.url);
-  }).catch(function (error) {
-    res.render('index', { page_respond_data: JSON.stringify(error) });
+      "Content-Type": "application/json",
+      "X-VERIFY": checksum,
+      accept: "application/json",
+    },
+  })
+  .then(function (response) {
+    res.json({
+      success: true,
+      message: "Redirecting to PhonePe",
+      redirectUrl: response.data.data.instrumentResponse.redirectInfo.url,
+    });
+  })
+  .catch(function (error) {
+    res.status(500).json({
+      success: false,
+      message: "Payment initiation failed",
+      error: error.message,
+    });
   });
 });
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//PAY RETURN
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++
-router.all('/pay-return-url', async function (req, res) {
-  if (req.body.code == 'PAYMENT_SUCCESS' && req.body.merchantId && req.body.transactionId && req.body.providerReferenceId) {
-    //++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // 1.In the live please match the amount you get byamount you send also so that hacker can't pass static value.
-    // 2.Don't take Marchent ID directly validate it with yoir Marchent ID
-    //++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    //if (req.body.transactionId == store.get('uuid').tx && req.body.merchantId == 'PGTESTPAYUAT' && req.body.amount == 1000) {
-    if (req.body.transactionId) {
-      //+++++++++++++++++++++++++++++++++++++++++++++++++++++
-      let saltKey = '5afb2d8c-5572-47cf-a5a0-93bb79647ffa';
-      let saltIndex = 1
-      //++++++++++++++++++++++++++++++++++++++++++++++++++++++
-      let surl = 'https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/status/PGTESTPAYUAT/' + req.body.transactionId;
-      //+++++++++++++++++++++++++++++++++++++++++++++++++++++
-      let string = '/pg/v1/status/PGTESTPAYUAT/' + req.body.transactionId + saltKey;
-      //+++++++++++++++++++++++++++++++++++++++++++++++++++++
-      let sha256_val = sha256(string);
-      let checksum = sha256_val + '###' + saltIndex;
-      //+++++++++++++++++++++++++++++++++++++++++++++++++++++
-      //console.log(checksum);
-      //+++++++++++++++++++++++++++++++++++++++++++++++++++++
-      axios.get(surl, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-VERIFY': checksum,
-          'X-MERCHANT-ID': req.body.transactionId,
-          'accept': 'application/json'
-        }
-      }).then(function (response) {
-        //+++++++++++++++++++++++++++++++++++++++++++++++++
-        //DB OPERATION
-        //+++++++++++++++++++++++++++++++++++++++++++++++++
-        //{PLease add your code.}
-        //+++++++++++++++++++++++++++++++++++++++++++++++++
-        //RETURN TO VIEW
-        //+++++++++++++++++++++++++++++++++++++++++++++++++
-        //console.log(response);
-        res.render('index', { page_respond_data: JSON.stringify(response.data) });
-      }).catch(function (error) {
-        res.render('index', { page_respond_data: JSON.stringify(error) });
+
+// PAY RETURN Route
+router.post('/pay-return-url', async function (req, res) {
+  const { code, merchantId, transactionId, providerReferenceId, amount } = req.body;
+
+  // console.log(merchantUserId, "---");
+  // console.log(req.body)
+  // console.log(req.query.UserId)
+  const userId = req.query.UserId
+
+  if (code === 'PAYMENT_SUCCESS' && merchantId && transactionId && providerReferenceId) {
+    let saltKey = '5afb2d8c-5572-47cf-a5a0-93bb79647ffa';
+    let saltIndex = 1;
+    let surl = `https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/status/${merchantId}/${transactionId}`;
+    let string = `/pg/v1/status/${merchantId}/${transactionId}${saltKey}`;
+    let sha256_val = sha256(string);
+    let checksum = sha256_val + '###' + saltIndex;
+
+    const options = {
+      method: 'get',
+      url: surl,
+      headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-VERIFY': checksum,
+        'X-MERCHANT-ID': merchantId,
+      },
+    };
+
+    axios.request(options)
+      .then(async function (response) {
+        // Save the payment return response in the database
+        const payment = new Payment({
+          code,
+          merchantId,
+          transactionId,
+          providerReferenceId,
+          Amount: amount / 100,
+          response: response.data,
+          CreatedBy: userId, 
+          UpdatedBy: userId, 
+        });
+
+        await payment.save();
+
+        res.json({
+          success: true,
+          message: "Payment verification successful",
+        });
+      })
+      .catch(function (error) {
+        console.error('Verification failed:', error);
+        res.status(500).json({
+          success: false,
+          message: "Payment verification failed",
+          error: error.message
+        });
       });
-    } else {
-      res.render('index', { page_respond_data: "Sorry!! Error1" });
-    }
   } else {
-    res.render('index', { page_respond_data: "Sorry!! Error2" });
+    res.status(400).json({
+      success: false,
+      message: "Payment failed or missing required parameters"
+    });
   }
 });
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 module.exports = router;
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++

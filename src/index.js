@@ -22,7 +22,8 @@ app.use(fileUpload({
 app.use(express.json());
 app.use(express.urlencoded({extended:false}))
 app.use(cors());
-app.use(cors({ origin: "https://mercury-uat.phonepe.com" }));
+// app.options("*", cors());
+// app.use(cors({ origin: "https://radiant-hamster-6f8234.netlify.app" }));
 
 //routes
 app.use("/v1", allRouters);

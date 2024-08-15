@@ -35,6 +35,7 @@ exports.getAllWallet= async (req, res) => {
 
     const records = await Wallet.find(searchQuery)
       .sort({ CreatedDate: -1 })
+      .populate('CreatedBy')
       .skip((pageNumber - 1) * size)
       .limit(size)
       ;
@@ -146,4 +147,23 @@ exports.getUserMoney = async (req, res) => {
             success: false
         });
     }
+};
+
+exports.getWalletForUser = async (req, res) => {
+  try {
+    const id = req.user._id
+    const wallet = await Wallet.find({CreatedBy:id});
+    if (!wallet) {
+      return res
+        .status(404)
+        .json({ error: "Withdrow not found", success: false });
+    }
+    return res
+      .status(constants.status_code.header.ok)
+      .send({ statusCode: 200, data: wallet, success: true });
+  } catch (error) {
+    return res
+      .status(constants.status_code.header.server_error)
+      .send({ statusCode: 500, error: error.message, success: false });
+  }
 };
