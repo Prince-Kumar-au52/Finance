@@ -15,7 +15,7 @@ exports.addWithdrow = async (req, res) => {
         .send({ error: 'Please Add UPI Detail', success: false });
     }
     // Query to find all wallet records created by the user
-    const walletRecords = await wallet.find({ CreatedBy: userId, IsDeleted: false });
+    const walletRecords = await Referal.find({ CreatedBy: userId, IsDeleted: false });
     const totalMoney = walletRecords.reduce((sum, record) => sum + record.Amount, 0);
 
     // Query to find all withdrawal records created by the user
@@ -24,7 +24,7 @@ exports.addWithdrow = async (req, res) => {
 
     const remainingMoney = totalMoney - totalWithdrawn;
     
-    const maxWithdrawalAmount = remainingMoney * 0.7;
+    const maxWithdrawalAmount = remainingMoney * 0.9;
 
     // Check if the withdrawal amount exceeds the maximum allowable amount
     if (req.body.Amount > maxWithdrawalAmount) {
