@@ -37,4 +37,28 @@ exports.addReferal = async (req, res) => {
       });
     }
   };
+  exports.getPointForUser = async (req, res) => {
+    try {
+      // Fetch all rewards (referral points) created by the user that are not deleted
+      const rewards = await Referal.find({ CreatedBy: req.user._id, IsDeleted: false });
+      
+      // Calculate the total points (money) by summing up the 'Point' field
+      const totalMoney = rewards.reduce((sum, record) => sum + Number(record.Point), 0);
+  
+      // Send the response with the total points
+      return res.status(constants.status_code.header.ok).json({
+        statusCode: 200,
+        success: true,
+        reward: totalMoney
+      });
+    } catch (error) {
+      // Handle any errors
+      return res.status(constants.status_code.header.server_error).json({
+        statusCode: 500,
+        error: error.message,
+        success: false
+      });
+    }
+  };
+  
   
