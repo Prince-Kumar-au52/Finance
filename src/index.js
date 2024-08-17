@@ -5,6 +5,8 @@ require('dotenv').config()
 const allRouters = require('./api/routers/routeIndex');
 const fileUpload = require("express-fileupload");
 var indexRouter = require('./api/routers/index');
+const cron = require("node-cron");
+const axios = require("axios")
  
 const path = require('path');
 const { connectDB } = require('./db/db');
@@ -29,6 +31,14 @@ app.use(cors());
 app.use("/v1", allRouters);
 app.use('/', indexRouter);
 
+cron.schedule('*/15 * * * *', async () => {
+  try {
+    const response = await axios.get('https://finance-075c.onrender.com/v1/dummy/getDummy');
+    console.log("API call successful:", response.data);
+  } catch (error) {
+    console.error("Error making API call:", error.message);
+  }
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
