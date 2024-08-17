@@ -1,4 +1,5 @@
 const constants = require("../../helper/constants");
+const Referal = require("../../models/referal");
 const UPIDetail = require("../../models/upiId");
 const User = require("../../models/userModel");
 const wallet = require("../../models/wallet");
