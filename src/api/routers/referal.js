@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 const { addReferal, getPointForUser } = require('../controllers/referController');
 
 
-router.post('/addReferalDetail',auth,addReferal)
+router.post('/addReferalDetail/:UserId',addReferal)
 router.get('/allReferalDetail',auth,getPointForUser)
 // router.get('/ReferalDetail/:id',getBankDetailById)
 

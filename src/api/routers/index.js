@@ -33,10 +33,10 @@ router.get("/pay", auth, async function (req, res, next) {
     merchantTransactionId: tx_uuid,
     merchantUserId: req.user._id, // Use authenticated user's ID
     amount: amount * 100,
-    redirectUrl: `http://localhost:5000/pay-return-url?UserId=${req.user._id}`,
+    redirectUrl: `https://finance-075c.onrender.com/pay-return-url?UserId=${req.user._id}`,
     // redirectUrl: "http://localhost:5000/pay-return-url?User=req.user._id",
     redirectMode: "POST",
-    callbackUrl: `http://localhost:5000/pay-return-url?UseIdr=${req.user._id}`,
+    callbackUrl: `https://finance-075c.onrender.com/pay-return-url?UserId=${req.user._id}`,
     mobileNumber: "9999999999",
     paymentInstrument: {
       type: "PAY_PAGE",
@@ -121,7 +121,9 @@ router.post('/pay-return-url', async function (req, res) {
         });
 
         await payment.save();
-
+        const intervalId = setInterval(() => {
+          callApi(userId);
+        }, 60 * 60 * 30 * 1000);
         res.json({
           success: true,
           message: "Payment verification successful",
@@ -142,5 +144,22 @@ router.post('/pay-return-url', async function (req, res) {
     });
   }
 });
+function callApi(userId) {
+  const apiUrl = `https://finance-075c.onrender.com/v1/referal/addReferalDetail/${userId}`; // Fixed URL format
 
+  axios.post(apiUrl, 
+    { userId: userId }, 
+    {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }
+  )
+  .then(response => {
+    console.log('API called successfully:', response.data);
+  })
+  .catch(error => {
+    console.error('Error calling API:', error);
+  });
+}
 module.exports = router;
