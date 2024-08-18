@@ -72,7 +72,7 @@ exports.getAllWallet = async (req, res) => {
 
 exports.getUPIWalletById = async (req, res) => {
   try {
-    const wallet = await Wallet.findById(req.params.id);
+    const wallet = await Wallet.findById(req.params.id).sort({ CreatedDate: -1 });
     if (!wallet) {
       return res
         .status(404)
@@ -167,7 +167,7 @@ exports.getUserMoney = async (req, res) => {
 exports.getWalletForUser = async (req, res) => {
   try {
     const id = req.user._id
-    const wallet = await Wallet.find({CreatedBy:id});
+    const wallet = await Wallet.find({CreatedBy:id}).sort({ CreatedDate: -1 });
     if (!wallet) {
       return res
         .status(404)

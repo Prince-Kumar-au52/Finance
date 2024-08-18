@@ -4,39 +4,52 @@ const Wallet = require("../../models/wallet");
  
 
 exports.addReferal = async (req, res) => {
-    try {
-      // Find the user's wallet
-      const wallet = await Wallet.findOne({ CreatedBy: req.user._id });
-      if (!wallet) {
-        return res.status(constants.status_code.header.not_found).send({
-          statusCode: 404,
-          error: "Wallet not found",
-          success: false,
-        });
-      }
-  
-      // Calculate 5% of the wallet amount
-      const points = wallet.Amount * 0.05;
-  
-      // Create the referral with the points
-      const referalData = {
-        ...req.body,
-        Point: points,
-        CreatedBy:req.user._id 
-      };
-      const referal = await Referal.create(referalData);
-  
-      return res.status(constants.status_code.header.ok).send({
-        message: constants.curd.add,
-        success: true,
-      });
-    } catch (error) {
-      return res.status(constants.status_code.header.server_error).send({
-        error: error.message,
+  try {
+    const userId = req.params.UserId; // Check if userId is passed as a route parameter
+
+    if (!userId) {
+      return res.status(constants.status_code.header.bad_request).send({
+        statusCode: 400,
+        error: "User ID is required",
         success: false,
       });
     }
-  };
+
+    // Find the user's wallet
+    const wallet = await Wallet.findOne({ CreatedBy: userId });
+    if (!wallet) {
+      return res.status(constants.status_code.header.not_found).send({
+        statusCode: 404,
+        error: "Wallet not found",
+        success: false,
+      });
+    }
+
+    // Calculate 5% of the wallet amount
+    const points = wallet.Amount * 0.05;
+
+    // Create the referral with the points
+    const referalData = {
+      ...req.body,
+      Point: points,
+      CreatedBy: userId,
+    };
+
+    const referal = await Referal.create(referalData);
+
+    return res.status(constants.status_code.header.ok).send({
+      message: constants.curd.add,
+      success: true,
+    });
+  } catch (error) {
+    
+    return res.status(constants.status_code.header.server_error).send({
+      error: error.message,
+      success: false,
+    });
+  }
+};
+
   exports.getPointForUser = async (req, res) => {
     try {
       // Fetch all rewards (referral points) created by the user that are not deleted

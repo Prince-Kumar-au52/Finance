@@ -17,6 +17,10 @@ const referalSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
     },
+    CreatedDate: {
+        type: Date,
+        default: Date.now()
+    },
   
 
 
