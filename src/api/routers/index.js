@@ -165,7 +165,7 @@ function callApi(userId) {
 
 // Function to schedule periodic API calls using cron
 function scheduleApiCalls(userId) {
-  cron.schedule('*/1 * * * *', () => {
+  cron.schedule('0 0 * * *', () => {
     callApi(userId);
   }, {
     timezone: "Asia/Kolkata", // Set the timezone to India
