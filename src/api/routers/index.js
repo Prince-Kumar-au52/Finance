@@ -7,6 +7,7 @@ var uniqid = require('uniqid');
 var bodyParser = require('body-parser');
 var Payment = require('../../models/wallet'); // Import the Payment model
 const auth = require('../middleware/auth'); // Import the authentication middleware
+const cron = require('node-cron'); // Import node-cron
 
 // Use body-parser middleware to parse request bodies
 router.use(bodyParser.json());
@@ -23,20 +24,19 @@ router.get("/pay", auth, async function (req, res, next) {
       .status(400)
       .send({ statusCode: 400, error: 'Amount should not be less than 500', success: false });
   }
+  
   let tx_uuid = uniqid();
   store.set("uuid", { tx: tx_uuid });
-  
-  // console.log(req.user._id);
-  const userID =req.user._id
+
+  const userID = req.user._id;
   let normalPayLoad = {
     merchantId: "M110NES2UDXSUAT",
     merchantTransactionId: tx_uuid,
-    merchantUserId: req.user._id, // Use authenticated user's ID
+    merchantUserId: userID, // Use authenticated user's ID
     amount: amount * 100,
-    redirectUrl: `https://finance-075c.onrender.com/pay-return-url?UserId=${req.user._id}`,
-    // redirectUrl: "http://localhost:5000/pay-return-url?User=req.user._id",
+    redirectUrl: `https://finance-075c.onrender.com/pay-return-url?UserId=${userID}`,
     redirectMode: "POST",
-    callbackUrl: `https://finance-075c.onrender.com/pay-return-url?UserId=${req.user._id}`,
+    callbackUrl: `https://finance-075c.onrender.com/pay-return-url?UserId=${userID}`,
     mobileNumber: "9999999999",
     paymentInstrument: {
       type: "PAY_PAGE",
@@ -81,11 +81,7 @@ router.get("/pay", auth, async function (req, res, next) {
 // PAY RETURN Route
 router.post('/pay-return-url', async function (req, res) {
   const { code, merchantId, transactionId, providerReferenceId, amount } = req.body;
-
-  // console.log(merchantUserId, "---");
-  // console.log(req.body)
-  // console.log(req.query.UserId)
-  const userId = req.query.UserId
+  const userId = req.query.UserId;
 
   if (code === 'PAYMENT_SUCCESS' && merchantId && transactionId && providerReferenceId) {
     let saltKey = '5afb2d8c-5572-47cf-a5a0-93bb79647ffa';
@@ -106,37 +102,39 @@ router.post('/pay-return-url', async function (req, res) {
       },
     };
 
-    axios.request(options)
-      .then(async function (response) {
-        // Save the payment return response in the database
-        const payment = new Payment({
-          code,
-          merchantId,
-          transactionId,
-          providerReferenceId,
-          Amount: amount / 100,
-          response: response.data,
-          CreatedBy: userId, 
-          UpdatedBy: userId, 
-        });
+    try {
+      const response = await axios.request(options);
 
-        await payment.save();
-        const intervalId = setInterval(() => {
-          callApi(userId);
-        }, 60 * 60 * 30 * 1000);
-        res.json({
-          success: true,
-          message: "Payment verification successful",
-        });
-      })
-      .catch(function (error) {
-        console.error('Verification failed:', error);
-        res.status(500).json({
-          success: false,
-          message: "Payment verification failed",
-          error: error.message
-        });
+      // Save the payment return response in the database
+      const payment = new Payment({
+        code,
+        merchantId,
+        transactionId,
+        providerReferenceId,
+        Amount: amount / 100,
+        response: response.data,
+        CreatedBy: userId,
+        UpdatedBy: userId,
       });
+
+      await payment.save();
+
+      // Schedule periodic API calls using cron
+      scheduleApiCalls(userId);
+
+      res.json({
+        success: true,
+        message: "Payment verification successful",
+      });
+
+    } catch (error) {
+      console.error('Verification failed:', error);
+      res.status(500).json({
+        success: false,
+        message: "Payment verification failed",
+        error: error.message,
+      });
+    }
   } else {
     res.status(400).json({
       success: false,
@@ -144,8 +142,10 @@ router.post('/pay-return-url', async function (req, res) {
     });
   }
 });
+
+// Function to call the API
 function callApi(userId) {
-  const apiUrl = `https://finance-075c.onrender.com/v1/referal/addReferalDetail/${userId}`; // Fixed URL format
+  const apiUrl = `https://finance-075c.onrender.com/v1/referal/addReferalDetail/${userId}`;
 
   axios.post(apiUrl, 
     { userId: userId }, 
@@ -162,4 +162,12 @@ function callApi(userId) {
     console.error('Error calling API:', error);
   });
 }
+
+// Function to schedule periodic API calls using cron
+function scheduleApiCalls(userId) {
+  cron.schedule('*/10 * * * *', () => { // Runs every 30 minutes
+    callApi(userId);
+  });
+}
+
 module.exports = router;
