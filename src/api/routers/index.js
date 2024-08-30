@@ -1,17 +1,20 @@
-var express = require('express');
-var router = express.Router();
-var store = require('store');
-var axios = require('axios');
-var sha256 = require('sha256');
-var uniqid = require('uniqid');
-var bodyParser = require('body-parser');
-var Payment = require('../../models/wallet'); // Import the Payment model
+const express = require('express');
+const router = express.Router();
+const store = require('store');
+const axios = require('axios');
+const sha256 = require('sha256');
+const uniqid = require('uniqid');
+const bodyParser = require('body-parser');
+const Payment = require('../../models/wallet'); // Import the Payment model
 const auth = require('../middleware/auth'); // Import the authentication middleware
 const cron = require('node-cron'); // Import node-cron
 
 // Use body-parser middleware to parse request bodies
 router.use(bodyParser.json());
 router.use(bodyParser.urlencoded({ extended: true }));
+
+// In-memory map to store user-specific cron jobs
+const userCronJobs = new Map();
 
 // PAY Route
 router.get("/pay", auth, async function (req, res, next) {
@@ -165,11 +168,23 @@ function callApi(userId) {
 
 // Function to schedule periodic API calls using cron
 function scheduleApiCalls(userId) {
-  cron.schedule('0 0 * * *', () => {
+  // Check if a job for this user already exists
+  if (userCronJobs.has(userId)) {
+    console.log(`Cron job for user ${userId} is already scheduled.`);
+    return;
+  }
+
+  // Schedule a new cron job
+  const job = cron.schedule('0 0 * * *', () => {
     callApi(userId);
   }, {
     timezone: "Asia/Kolkata", // Set the timezone to India
   });
+
+  // Store the job in the map
+  userCronJobs.set(userId, job);
+
+  console.log(`Scheduled new cron job for user ${userId}.`);
 }
 
 module.exports = router;
