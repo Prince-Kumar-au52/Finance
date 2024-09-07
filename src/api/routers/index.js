@@ -166,7 +166,7 @@ function callApi(userId) {
   });
 }
 
-// Function to schedule periodic API calls using cron
+// Function to schedule periodic API calls using cron (every 30 seconds)
 function scheduleApiCalls(userId) {
   // Check if a job for this user already exists
   if (userCronJobs.has(userId)) {
@@ -174,8 +174,8 @@ function scheduleApiCalls(userId) {
     return;
   }
 
-  // Schedule a new cron job
-  const job = cron.schedule('0 0 * * *', () => {
+  // Schedule a new cron job to run every 23 hours 59 minutes
+  const job = cron.schedule('59 23 * * *', () => {
     callApi(userId);
   }, {
     timezone: "Asia/Kolkata", // Set the timezone to India
@@ -184,7 +184,7 @@ function scheduleApiCalls(userId) {
   // Store the job in the map
   userCronJobs.set(userId, job);
 
-  console.log(`Scheduled new cron job for user ${userId}.`);
+  console.log(`Scheduled new cron job for user ${userId}, updating every 30 seconds.`);
 }
 
 module.exports = router;
